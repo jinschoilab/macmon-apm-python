@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "macmon-apm"
+version = "0.0.1"
+description = "macmon Python APM agent"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "Proprietary" }
+dependencies = [
+    # 표준 라이브러리만으로 동작 — 외부 의존성 없음.
+    # urllib + threading + gc + resource(POSIX)만 사용.
+]
+
+[project.optional-dependencies]
+dev = [
+    "flask",
+    "requests",
+]
+
+[tool.setuptools.packages.find]
+include = ["macmon_apm*"]
