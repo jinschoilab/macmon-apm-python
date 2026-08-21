@@ -89,6 +89,7 @@ class StackSampler:
         return {
             "sampled_at": _wall_now_iso(),
             "host": self.cfg.host,
+            "agent_id": self.cfg.agent_id,
             "service": self.cfg.service,
             "lang": "python",
             "threads": _capture_threads(my_ident),

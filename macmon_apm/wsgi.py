@@ -49,6 +49,7 @@ class WSGIMiddleware:
         trace = Trace(
             id=new_trace_id(tid),
             host=agent.config.host,
+            agent_id=agent.config.agent_id,
             service=agent.config.service,
         )
         root = TraceSpan(

@@ -95,6 +95,7 @@ class TraceSpan:
 class Trace:
     id: str
     host: str
+    agent_id: str = ""
     pid: int = field(default_factory=os.getpid)
     comm: str = "python"
     service: str = ""
@@ -121,6 +122,8 @@ class Trace:
             "duration_ns": self.duration_ns,
             "root_goid": 0,  # 서버 호환용 더미. Python은 goroutine 개념 없음.
         }
+        if self.agent_id:
+            d["agent_id"] = self.agent_id
         if self.service:
             d["service"] = self.service
         if self.root is not None:

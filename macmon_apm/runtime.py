@@ -81,6 +81,7 @@ class RuntimeSampler:
         sample: Dict[str, Any] = {
             "wall_at": _wall_now_iso(),
             "host": self.cfg.host,
+            "agent_id": self.cfg.agent_id,
             "service": self.cfg.service,
             "lang": "python",
             "jvm_thread_count": thread_count,

@@ -51,7 +51,12 @@ def main() -> None:
     agent = _agent.get()
 
     tid = threading.get_ident()
-    trace = Trace(id=new_trace_id(tid), host=agent.config.host, service=agent.config.service)
+    trace = Trace(
+        id=new_trace_id(tid),
+        host=agent.config.host,
+        agent_id=agent.config.agent_id,
+        service=agent.config.service,
+    )
     trace.root = TraceSpan(kind="cli", tid=tid, thread_name=threading.current_thread().name)
 
     try:
