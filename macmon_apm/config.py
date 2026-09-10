@@ -9,6 +9,9 @@ Java/Go APM과 동일한 키 컨벤션:
 - MACMON_APM_DISABLE   : "1"이면 모든 전송 비활성 (테스트용)
 - MACMON_APM_RUNTIME_INTERVAL_SEC : 런타임 샘플 주기 (기본 30)
 - MACMON_APM_STACK_INTERVAL_SEC   : 스레드 스택 스냅샷 주기 (기본 5)
+- MACMON_APM_SAMPLE_RATE : 0~100 정수, 헤드 샘플링 비율 (기본 100 = 전량).
+                           Java APM(macmon.sample.rate)과 동일한 개념 — 100 미만이면
+                           일부 요청은 Trace 객체 자체를 만들지 않고 그대로 통과시킨다.
 """
 from __future__ import annotations
 
@@ -104,6 +107,9 @@ class Config:
     )
     stack_interval_sec: float = field(
         default_factory=lambda: float(os.environ.get("MACMON_APM_STACK_INTERVAL_SEC", "5") or 5)
+    )
+    sample_rate: int = field(
+        default_factory=lambda: min(100, max(0, int(os.environ.get("MACMON_APM_SAMPLE_RATE", "100") or 100)))
     )
 
     @property

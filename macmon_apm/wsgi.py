@@ -10,6 +10,7 @@ ASGI 미들웨어는 Step 1에서 추가.
 """
 from __future__ import annotations
 
+import random
 import threading
 from typing import Any, Callable, Iterable, List, Tuple
 
@@ -38,6 +39,12 @@ class WSGIMiddleware:
     def __call__(self, environ: dict, start_response: Callable) -> Iterable[bytes]:
         agent = _agent.get()
         if agent is None or agent.config.disabled:
+            return self.app(environ, start_response)
+
+        # 헤드 샘플링: 이 요청을 추적하지 않기로 했으면 Trace/Span을 만들지 않고
+        # 그대로 통과시킨다 (Java APM의 macmon.sample.rate와 동일한 개념).
+        rate = agent.config.sample_rate
+        if rate < 100 and random.randint(0, 99) >= rate:
             return self.app(environ, start_response)
 
         tid = threading.get_ident()
