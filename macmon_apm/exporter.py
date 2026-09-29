@@ -97,7 +97,10 @@ class Exporter:
             self._conns[key] = conn
 
         try:
-            conn.request("POST", path, body=body, headers={"Content-Type": "application/json"})
+            headers = {"Content-Type": "application/json"}
+            if getattr(self.cfg, "api_key", ""):
+                headers["X-API-Key"] = self.cfg.api_key
+            conn.request("POST", path, body=body, headers=headers)
             resp = conn.getresponse()
             resp.read()
             self._sent += 1

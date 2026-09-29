@@ -46,6 +46,7 @@ app.wsgi_app = WSGIMiddleware(app.wsgi_app)
 | 키 | 기본값 | 의미 |
 |---|---|---|
 | `MACMON_APM_URL` | `http://127.0.0.1:6600` | macmon-server 수집 포트 |
+- `MACMON_APM_KEY` : 테넌트/팀 API 키(`mak_…`). 서버가 이 키로 기록의 테넌트를 확정한다. 없으면 default 테넌트
 | `MACMON_APM_SERVICE` | argv[0] basename | 서비스명. UI에서 그룹 키 |
 | `MACMON_APM_HOST` | `socket.gethostname()` | 호스트 식별자 |
 | `MACMON_APM_DISABLE` | `0` | `1`이면 모든 전송 끔 (테스트용) |

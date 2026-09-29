@@ -2,6 +2,7 @@
 
 Java/Go APM과 동일한 키 컨벤션:
 - MACMON_APM_URL       : macmon-server 수집 포트 (기본 http://127.0.0.1:6600)
+- MACMON_APM_KEY       : 테넌트/팀 API 키(mak_…). 기록이 그 테넌트로 격리된다
 - MACMON_APM_SERVICE   : 서비스명. 미지정 시 sys.argv[0] 베이스네임으로 추정
 - MACMON_APM_HOST      : 호스트 식별자. 미지정 시 socket.gethostname()
 - MACMON_APM_AGENT_ID  : agent_id. 미지정 시 macmon-agent(Go)와 동일한 알고리즘으로
@@ -98,6 +99,8 @@ def _default_agent_id() -> str:
 @dataclass
 class Config:
     url: str = field(default_factory=lambda: os.environ.get("MACMON_APM_URL", "http://127.0.0.1:6600"))
+    # 테넌트/팀 API 키(mak_…). 서버가 이 키로 기록의 테넌트를 확정한다. 없으면 default 테넌트
+    api_key: str = field(default_factory=lambda: os.environ.get("MACMON_APM_KEY", ""))
     service: str = field(default_factory=lambda: os.environ.get("MACMON_APM_SERVICE", "") or _default_service())
     host: str = field(default_factory=lambda: os.environ.get("MACMON_APM_HOST", "") or _default_host())
     agent_id: str = field(default_factory=lambda: os.environ.get("MACMON_APM_AGENT_ID", "") or _default_agent_id())
