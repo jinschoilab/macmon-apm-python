@@ -2,7 +2,9 @@
 
 Java/Go APM과 동일한 키 컨벤션:
 - MACMON_APM_URL       : macmon-server 수집 포트 (기본 http://127.0.0.1:6600)
-- MACMON_APM_KEY       : 테넌트/팀 API 키(mak_…). 기록이 그 테넌트로 격리된다
+- MACMON_APM_KEY       : 테넌트/팀 API 키(mak_…). 기록이 그 테넌트로 격리된다.
+                         없으면 macmon-agent.conf($MACMON_HOME → 진입 스크립트 옆 → ~/.macmon-agent.conf)의 api_key
+- MACMON_HOME          : macmon-agent 설치 디렉토리. conf(api_key)와 .macmon-agent.id를 여기서 먼저 찾는다
 - MACMON_APM_SERVICE   : 서비스명. 미지정 시 sys.argv[0] 베이스네임으로 추정
 - MACMON_APM_HOST      : 호스트 식별자. 미지정 시 socket.gethostname()
 - MACMON_APM_AGENT_ID  : agent_id. 미지정 시 macmon-agent(Go)와 동일한 알고리즘으로
@@ -50,6 +52,10 @@ def _agent_id_candidates() -> list:
     2) $HOME — 하위 호환/폴백.
     """
     candidates = []
+    # MACMON_HOME: macmon-agent가 설치된 디렉토리 — conf와 agent_id를 한 곳에서 공유
+    mh = os.environ.get("MACMON_HOME", "").strip()
+    if mh:
+        candidates.append(os.path.join(mh, _AGENT_ID_FILENAME))
     argv0 = (sys.argv[0] or "").strip()
     if argv0:
         try:
@@ -62,6 +68,45 @@ def _agent_id_candidates() -> list:
     if home and home != "~":
         candidates.append(os.path.join(home, _AGENT_ID_FILENAME))
     return candidates
+
+
+def _conf_api_key() -> str:
+    """macmon-agent.conf의 api_key/team.key — macmon-agent(Go)와 같은 파일·같은 탐색 순서.
+
+    $MACMON_HOME/macmon-agent.conf → 진입 스크립트 옆 macmon-agent.conf → $HOME/.macmon-agent.conf. 같은 호스트의 agent와
+    키를 한 곳에서 관리하면 호스트 메트릭과 APM이 같은 테넌트로 간다. 못 읽으면 빈 문자열.
+    """
+    paths = []
+    mh = os.environ.get("MACMON_HOME", "").strip()
+    if mh:
+        paths.append(os.path.join(mh, "macmon-agent.conf"))
+    argv0 = (sys.argv[0] or "").strip()
+    if argv0:
+        try:
+            paths.append(os.path.join(os.path.dirname(os.path.abspath(argv0)), "macmon-agent.conf"))
+        except OSError:
+            pass
+    home = os.path.expanduser("~")
+    if home and home != "~":
+        paths.append(os.path.join(home, ".macmon-agent.conf"))
+    for path in paths:
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line or line.startswith("#") or "=" not in line:
+                        continue
+                    k, v = line.split("=", 1)
+                    if k.strip() in ("team.key", "api_key") and v.strip():
+                        return v.strip()
+        except OSError:
+            continue
+    return ""
+
+
+def _default_api_key() -> str:
+    """우선순위: MACMON_APM_KEY 환경변수 → macmon-agent.conf."""
+    return os.environ.get("MACMON_APM_KEY", "").strip() or _conf_api_key()
 
 
 def _default_agent_id() -> str:
@@ -100,7 +145,7 @@ def _default_agent_id() -> str:
 class Config:
     url: str = field(default_factory=lambda: os.environ.get("MACMON_APM_URL", "http://127.0.0.1:6600"))
     # 테넌트/팀 API 키(mak_…). 서버가 이 키로 기록의 테넌트를 확정한다. 없으면 default 테넌트
-    api_key: str = field(default_factory=lambda: os.environ.get("MACMON_APM_KEY", ""))
+    api_key: str = field(default_factory=_default_api_key)
     service: str = field(default_factory=lambda: os.environ.get("MACMON_APM_SERVICE", "") or _default_service())
     host: str = field(default_factory=lambda: os.environ.get("MACMON_APM_HOST", "") or _default_host())
     agent_id: str = field(default_factory=lambda: os.environ.get("MACMON_APM_AGENT_ID", "") or _default_agent_id())
