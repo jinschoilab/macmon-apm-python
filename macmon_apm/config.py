@@ -2,8 +2,10 @@
 
 Java/Go APM과 동일한 키 컨벤션:
 - MACMON_APM_URL       : macmon-server 수집 포트 (기본 http://127.0.0.1:6600)
-- MACMON_APM_KEY       : 테넌트/팀 API 키(mak_…). 기록이 그 테넌트로 격리된다.
-                         없으면 macmon-agent.conf($MACMON_HOME → 진입 스크립트 옆 → ~/.macmon-agent.conf)의 api_key
+- MACMON_PROJECT_ACCESS_KEY : 프로젝트 액세스 키(mpk_…). 서버가 이 키로 프로젝트(pcode)·테넌트를 판독한다.
+- MACMON_APM_KEY       : 위가 없을 때. 레거시 테넌트/팀 키(mak_/mtk_)도 받는다.
+                         둘 다 없으면 macmon-agent.conf($MACMON_HOME → 진입 스크립트 옆 → ~/.macmon-agent.conf)의
+                         apm.project_access_key → project_access_key → team.key/api_key
 - MACMON_HOME          : macmon-agent 설치 디렉토리. conf(api_key)와 .macmon-agent.id를 여기서 먼저 찾는다
 - MACMON_APM_SERVICE   : 서비스명. 미지정 시 sys.argv[0] 베이스네임으로 추정
 - MACMON_APM_HOST      : 호스트 식별자. 미지정 시 socket.gethostname()
@@ -90,6 +92,7 @@ def _conf_api_key() -> str:
     if home and home != "~":
         paths.append(os.path.join(home, ".macmon-agent.conf"))
     for path in paths:
+        found = {}
         try:
             with open(path, "r", encoding="utf-8") as f:
                 for line in f:
@@ -97,16 +100,24 @@ def _conf_api_key() -> str:
                     if not line or line.startswith("#") or "=" not in line:
                         continue
                     k, v = line.split("=", 1)
-                    if k.strip() in ("team.key", "api_key") and v.strip():
-                        return v.strip()
+                    if v.strip():
+                        found.setdefault(k.strip(), v.strip())
         except OSError:
             continue
+        # APM 전용 프로젝트 키 → 호스트와 같은 프로젝트 키 → 레거시 키
+        for k in ("apm.project_access_key", "project_access_key", "team.key", "api_key"):
+            if found.get(k):
+                return found[k]
     return ""
 
 
 def _default_api_key() -> str:
-    """우선순위: MACMON_APM_KEY 환경변수 → macmon-agent.conf."""
-    return os.environ.get("MACMON_APM_KEY", "").strip() or _conf_api_key()
+    """우선순위: MACMON_PROJECT_ACCESS_KEY → MACMON_APM_KEY 환경변수 → macmon-agent.conf."""
+    return (
+        os.environ.get("MACMON_PROJECT_ACCESS_KEY", "").strip()
+        or os.environ.get("MACMON_APM_KEY", "").strip()
+        or _conf_api_key()
+    )
 
 
 def _default_agent_id() -> str:
